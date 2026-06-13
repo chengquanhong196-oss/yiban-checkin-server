@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}签到配置 — 易班云签到{% endblock %}
+{% block content %}
+<h1>签到配置</h1>
+<p class="subtitle">这些信息将加密存储在服务器上，仅用于每日自动签到。</p>
+
+<form method="POST" action="/config" class="form-card">
+    <h3>易班账号</h3>
+    <label>手机号</label>
+    <input type="tel" name="phone" value="{{ config.phone }}" placeholder="11 位手机号" required pattern="1[0-9]{10}">
+    <label>密码</label>
+    <input type="password" name="password" value="{{ config.password }}" placeholder="易班密码" required>
+
+    <h3>学校信息</h3>
+    <div class="form-row">
+        <div class="form-col"><label>学校名称</label><input name="school" value="{{ config.school }}" placeholder="福州大学" required></div>
+        <div class="form-col"><label>校区</label><input name="campus" value="{{ config.campus }}" placeholder="晋江"></div>
+    </div>
+    <div class="form-row">
+        <div class="form-col"><label>纬度</label><input name="lat" value="{{ config.lat }}" placeholder="24.571" type="number" step="0.001" required></div>
+        <div class="form-col"><label>经度</label><input name="lng" value="{{ config.lng }}" placeholder="118.617" type="number" step="0.001" required></div>
+    </div>
+
+    <h3>校本化参数</h3>
+    <div class="form-row">
+        <div class="form-col"><label>App ID (act)</label><input name="act" value="{{ config.act }}" placeholder="iapp7463" required></div>
+        <div class="form-col"><label>OAuth Client ID</label><input name="client_id" value="{{ config.client_id }}" placeholder="95626fa3080300ea" required></div>
+    </div>
+
+    <h3>通知</h3>
+    <label>Server酱 SendKey</label>
+    <input name="push_key" value="{{ config.push_key }}" placeholder="留空则不推送，去 sct.ftqq.com 获取">
+    <p class="hint">微信扫码 <a href="https://sct.ftqq.com" target="_blank">sct.ftqq.com</a> 获取 SendKey，签到结果推送到微信</p>
+
+    <button type="submit" class="btn btn-primary">💾 保存配置</button>
+</form>
+{% endblock %}

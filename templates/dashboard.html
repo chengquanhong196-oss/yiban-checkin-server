@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}控制台 — 易班云签到{% endblock %}
+{% block content %}
+<h1>控制台</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ profile.tier_display }}</div>
+        <div class="stat-label">会员等级</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.today_success }}/{{ stats.today_attempts }}</div>
+        <div class="stat-label">今日签到</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.month_success }}/{{ stats.month_total }}</div>
+        <div class="stat-label">本月签到</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.streak }} 天</div>
+        <div class="stat-label">连续签到</div>
+    </div>
+</div>
+
+<div class="actions-row">
+    <form method="POST" action="/dashboard/checkin" style="display:inline">
+        <button type="submit" class="btn btn-primary">🔄 立即云签到</button>
+    </form>
+    {% if not profile.has_config %}
+    <a href="/config" class="btn btn-outline">⚠️ 请先配置签到信息</a>
+    {% endif %}
+</div>
+
+{% if not profile.subscription_active %}
+<div class="upgrade-banner">
+    <p>💡 免费用户每天只能手动触发签到。升级会员后每天 21:30 自动签到，Mac 关机也能签。</p>
+    <a href="https://afdian.com/a/yiban-checkin" class="btn btn-primary">¥6.9/月 升级会员</a>
+</div>
+{% endif %}
+
+<h2>最近记录</h2>
+<div class="log-list">
+    {% for log in history %}
+    <div class="log-item">
+        <span class="log-status {{ 'success' if log.success else 'fail' }}">
+            {{ '✅' if log.success else '❌' }}
+        </span>
+        <span class="log-msg">{{ log.message }}</span>
+        <span class="log-method">{{ log.method.upper() }}</span>
+        <span class="log-time">{{ log.created_at.strftime('%m-%d %H:%M') }}</span>
+    </div>
+    {% else %}
+    <p class="empty">暂无签到记录</p>
+    {% endfor %}
+</div>
+{% endblock %}

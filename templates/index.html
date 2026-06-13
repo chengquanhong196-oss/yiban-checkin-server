@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}易班云签到 — 首页{% endblock %}
+{% block content %}
+<div class="hero">
+    <h1>☁️ 易班云签到</h1>
+    <p class="subtitle">Mac 关机也能自动签到 · 每天 21:30 · 微信通知</p>
+
+    {% if user %}
+    <div class="hero-actions">
+        <a href="/dashboard" class="btn btn-primary">进入控制台</a>
+    </div>
+    {% else %}
+    <div class="hero-actions">
+        <a href="/register" class="btn btn-primary">免费注册</a>
+        <a href="/login" class="btn btn-outline">已有账号？登录</a>
+    </div>
+    {% endif %}
+
+    <div class="features">
+        <div class="feature-card">
+            <div class="feature-icon">🖥</div>
+            <h3>全平台覆盖</h3>
+            <p>macOS 本地 App + Windows/任何设备浏览器访问</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔐</div>
+            <h3>安全加密</h3>
+            <p>密码 Fernet 加密存储，传输 HTTPS 保护</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔔</div>
+            <h3>微信通知</h3>
+            <p>签到结果实时推送到微信，不在学校自动跳过</p>
+        </div>
+    </div>
+
+    <div class="pricing">
+        <h2>定价</h2>
+        <div class="pricing-cards">
+            <div class="pricing-card">
+                <h3>免费</h3>
+                <div class="price">¥0</div>
+                <ul>
+                    <li>本地签到（macOS App）</li>
+                    <li>手动签到</li>
+                    <li>基础日志查看</li>
+                </ul>
+                <a href="/register" class="btn btn-outline">开始使用</a>
+            </div>
+            <div class="pricing-card featured">
+                <h3>月付</h3>
+                <div class="price">¥6.9<span>/月</span></div>
+                <ul>
+                    <li>每日自动云签到</li>
+                    <li>Mac 关机也能签</li>
+                    <li>微信实时通知</li>
+                    <li>优先技术支持</li>
+                </ul>
+                <a href="https://afdian.com/a/yiban-checkin" class="btn btn-primary">升级会员</a>
+            </div>
+            <div class="pricing-card">
+                <h3>年付</h3>
+                <div class="price">¥49<span>/年</span></div>
+                <ul>
+                    <li>月付全部权益</li>
+                    <li>合 ¥4.1/月</li>
+                    <li>API 变更第一时间适配</li>
+                </ul>
+                <a href="https://afdian.com/a/yiban-checkin" class="btn btn-primary">升级会员</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

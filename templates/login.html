@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}登录 — 易班云签到{% endblock %}
+{% block content %}
+<div class="form-card">
+    <h1>登录</h1>
+    <form method="POST" action="/login">
+        <label>邮箱</label>
+        <input type="email" name="email" placeholder="your@email.com" required autofocus>
+        <label>密码</label>
+        <input type="password" name="password" placeholder="至少 6 位" required minlength="6">
+        <button type="submit" class="btn btn-primary">登录</button>
+    </form>
+    <p class="form-footer">没有账号？<a href="/register">注册</a></p>
+</div>
+{% endblock %}
