@@ -616,3 +616,27 @@ def broadcast_notify(body: NotifyRequest, db: Session = Depends(get_db)):
 
     logger.info(f"📢 通知已推送: {sent}/{len(paid)} 付费用户 — {body.title}")
     return {"ok": True, "sent": sent, "total": len(paid)}
+
+
+@app.post("/api/admin/retry-checkin")
+def admin_retry_checkin(request: Request, db: Session = Depends(get_db)):
+    """管理员触发全员重新签到（从 X-Admin-Key 请求头取密钥）"""
+    admin_key = request.headers.get("X-Admin-Key", "")
+    _check_admin(admin_key)
+
+    from checkin_worker import run_daily_checkin
+    import threading
+
+    # Run in background thread to avoid timeout
+    def _run():
+        from checkin_worker import SessionLocal
+        db2 = SessionLocal()
+        try:
+            run_daily_checkin()
+        finally:
+            db2.close()
+
+    t = threading.Thread(target=_run)
+    t.start()
+
+    return {"ok": True, "message": "全员签到已在后台启动"}
