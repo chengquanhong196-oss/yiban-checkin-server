@@ -7,6 +7,7 @@ This is the same API flow as cloud_checkin.py but integrated into the server.
 import json
 import time
 import base64
+import random
 import hashlib
 import urllib.parse
 import logging
@@ -21,6 +22,15 @@ from auth import decrypt_config
 from config import PUSH_ENABLED
 
 logger = logging.getLogger("checkin_worker")
+
+# Rotate User-Agents to avoid fingerprinting
+_UA_POOL = [
+    "Yiban/5.1.2 (iPhone; iOS 17.5; Scale/3.00)",
+    "Yiban/5.1.2 (iPhone; iOS 18.1; Scale/2.00)",
+    "Yiban/5.1.1 (iPhone; iOS 17.6; Scale/3.00)",
+    "Yiban/5.1.3 (iPhone; iOS 18.2; Scale/3.00)",
+    "Yiban/5.1.2 (iPad; iPadOS 17.5; Scale/2.00)",
+]
 
 # ============================================================
 # RSA encryption (same as cloud_checkin.py)
@@ -57,6 +67,10 @@ def rsa_encrypt(text: str) -> str:
 UA = "Yiban"
 APP_VERSION = "5.1.2"
 
+def random_ua() -> str:
+    """Return a random User-Agent from the pool."""
+    return random.choice(_UA_POOL)
+
 
 def _push_to_phone(push_key: str, title: str, body: str):
     if not push_key or not PUSH_ENABLED:
@@ -88,7 +102,7 @@ def run_checkin_for_user(user: User) -> CheckinLog:
                           message="未配置手机号或密码")
 
     session = requests.Session()
-    session.headers.update({"User-Agent": UA, "AppVersion": APP_VERSION})
+    session.headers.update({"User-Agent": random_ua(), "AppVersion": APP_VERSION})
     for domain in ["api.uyiban.com", "c.uyiban.com", ".uyiban.com"]:
         session.cookies.set("csrf_token", "00000", domain=domain)
 
@@ -113,11 +127,11 @@ def run_checkin_for_user(user: User) -> CheckinLog:
             continue
         access_token = token
 
-        # Get verify_request
+        # Get verify_request (use session to keep cookies)
         vr_headers = {"Authorization": f"Bearer {token}", "logintoken": token,
-                      "Origin": "https://c.uyiban.com", "User-Agent": UA, "AppVersion": APP_VERSION}
-        vr_resp = requests.get(f"https://f.yiban.cn/iapp/index?act={act}",
-                               headers=vr_headers, allow_redirects=False)
+                      "Origin": "https://c.uyiban.com", "User-Agent": random_ua(), "AppVersion": APP_VERSION}
+        vr_resp = session.get(f"https://f.yiban.cn/iapp/index?act={act}",
+                              headers=vr_headers, allow_redirects=False)
         location = vr_resp.headers.get("Location", "")
         if "verify_request=" not in location:
             continue
@@ -185,28 +199,46 @@ def run_checkin_for_user(user: User) -> CheckinLog:
 # ============================================================
 
 def run_daily_checkin():
-    """Run check-in for all active users. Called by the scheduler."""
+    """Run check-in for all active users. Called by the scheduler.
+    Adds random delays and shuffles order to avoid rate-limiting."""
     logger.info("========== 每日批量签到开始 ==========")
     db = SessionLocal()
     try:
         users = db.query(User).filter(User.is_active == True).all()
-        logger.info(f"活跃用户数: {len(users)}")
+        # Shuffle to avoid predictable order triggering rate limits
+        random.shuffle(users)
+        logger.info(f"活跃用户数: {len(users)} (已随机排序)")
 
         success_count = 0
-        for user in users:
-            logger.info(f"签到: {user.email}")
-            try:
-                log = run_checkin_for_user(user)
-                db.add(log)
-                # Log is not yet committed, but we need user from db
-                # Reload the user to attach the log properly
-            except Exception as e:
-                logger.error(f"签到异常 ({user.email}): {e}")
-                db.add(CheckinLog(user_id=user.id, success=False, method="cloud",
-                                  message=f"系统异常: {str(e)[:500]}"))
-            else:
+        for idx, user in enumerate(users):
+            # Random delay between users (45-120 seconds) to avoid rate limiting
+            if idx > 0:
+                delay = random.randint(45, 120)
+                logger.info(f"等待 {delay}s 后签到下一位...")
+                time.sleep(delay)
+
+            logger.info(f"签到 ({idx+1}/{len(users)}): {user.email}")
+            # Retry up to 2 times on failure
+            for attempt in range(1, 4):
+                try:
+                    log = run_checkin_for_user(user)
+                    db.add(log)
+                except Exception as e:
+                    logger.error(f"签到异常 ({user.email}): {e}")
+                    log = CheckinLog(user_id=user.id, success=False, method="cloud",
+                                     message=f"系统异常: {str(e)[:500]}")
+                    db.add(log)
+
                 if log.success:
                     success_count += 1
+                    break
+                elif attempt < 3:
+                    # Wait longer before retry (2-4 minutes)
+                    retry_delay = random.randint(120, 240)
+                    logger.warning(f"  {user.email} 失败 (attempt {attempt}): {log.message} — {retry_delay}s 后重试")
+                    time.sleep(retry_delay)
+                else:
+                    logger.error(f"  {user.email} 3次尝试均失败: {log.message}")
 
         db.commit()
         logger.info(f"批量签到完成: {success_count}/{len(users)} 成功")
