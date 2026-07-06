@@ -45,7 +45,7 @@ e8m5cv5vPGY75uVrGqALQ6Xm961PPc5cJ1q7tmEZMj+z5HE7tgAdhiPI6acKgrAv
 def rsa_encrypt(text: str) -> str:
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import padding
-    key = serialization.load_pem_public_key(RSA_PUBKEY.encode(), password=None)
+    key = serialization.load_pem_public_key(RSA_PUBKEY.encode())
     encrypted = key.encrypt(text.encode("utf-8"), padding.PKCS1v15())
     return base64.b64encode(encrypted).decode()
 
