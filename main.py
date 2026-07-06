@@ -640,3 +640,22 @@ def admin_retry_checkin(request: Request, db: Session = Depends(get_db)):
     t.start()
 
     return {"ok": True, "message": "全员签到已在后台启动"}
+
+
+@app.delete("/api/admin/users/{user_id}")
+def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
+    """管理员删除用户（从 X-Admin-Key 请求头取密钥）"""
+    admin_key = request.headers.get("X-Admin-Key", "")
+    _check_admin(admin_key)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    # Delete user's checkin logs first (foreign key)
+    db.query(CheckinLog).filter(CheckinLog.user_id == user_id).delete()
+    db.delete(user)
+    db.commit()
+
+    logger.info(f"🗑️ 管理员已删除用户: {user.email}")
+    return {"ok": True, "message": f"已删除 {user.email}"}
